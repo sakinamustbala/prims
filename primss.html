@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prim's Algorithm Interactive Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .simulation-area {
+            flex: 3;
+        }
+        
+        .theory-area {
+            flex: 1;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            max-width: 350px;
+            height: fit-content;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #weightInput {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .canvas-container {
+            position: relative;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+            background-color: #fff;
+        }
+        
+        .info-panel {
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .caption-area {
+            min-height: 60px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .status-msg {
+            color: #666;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        
+        .cost-display {
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prim's Algorithm Simulator</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ul>
+                <li><strong>Add Node:</strong> Click on the canvas to add a new node</li>
+                <li><strong>Connect Nodes:</strong> Select two nodes to create an edge, then enter weight</li>
+                <li><strong>Delete Node:</strong> Select a node and click "Delete Node"</li>
+                <li><strong>Run Algorithm:</strong> Click "Run Prim's Algorithm" to visualize it step by step</li>
+                <li><strong>Clear Graph:</strong> Reset the entire graph</li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="simulation-area">
+                <div class="controls">
+                    <button id="addNodeBtn">Add Node Mode</button>
+                    <button id="connectBtn">Connect Nodes Mode</button>
+                    <button id="deleteNodeBtn">Delete Node</button>
+                    <input type="number" id="weightInput" placeholder="Weight" min="1" value="1">
+                    <button id="clearBtn">Clear Graph</button>
+                    <button id="runAlgorithmBtn">Run Prim's Algorithm</button>
+                    <button id="nextStepBtn" disabled>Next Step</button>
+                    <button id="stopAlgorithmBtn" disabled>Stop Algorithm</button>
+                </div>
+                
+                <div class="caption-area" id="caption">
+                    Welcome to Prim's Algorithm Visualization Lab. Start by adding nodes and connecting them with weighted edges.
+                </div>
+                
+                <div class="canvas-container">
+                    <canvas id="graphCanvas" width="800" height="500"></canvas>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>Current Status:</h3>
+                    <div id="statusMsg" class="status-msg">Create your graph by adding nodes and edges.</div>
+                    <div id="costDisplay" class="cost-display"></div>
+                </div>
+            </div>
+            
+            <div class="theory-area">
+                <h3>About Prim's Algorithm</h3>
+                <p>Prim's algorithm finds a Minimum Spanning Tree (MST) for a weighted undirected graph. This means it finds a subset of edges that forms a tree including every vertex, where the total weight of all the edges in the tree is minimized.</p>
+                
+                <h4>How Prim's Algorithm Works:</h4>
+                <ol>
+                    <li>Start with any vertex as a single-vertex tree.</li>
+                    <li>Add the minimum weight edge from the tree to a vertex not in the tree.</li>
+                    <li>Repeat step 2 until all vertices are in the tree.</li>
+                </ol>
+                
+                <h4>Key Properties:</h4>
+                <ul>
+                    <li>The MST has (n-1) edges, where n is the number of vertices.</li>
+                    <li>The algorithm has O(E log V) time complexity with a binary heap implementation.</li>
+                    <li>The MST is unique if all edge weights are different.</li>
+                </ul>
+                
+                <h4>Applications:</h4>
+                <ul>
+                    <li>Network design</li>
+                    <li>Approximation algorithms for NP-hard problems</li>
+                    <li>Cluster analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and drawing context
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const addNodeBtn = document.getElementById('addNodeBtn');
+        const connectBtn = document.getElementById('connectBtn');
+        const deleteNodeBtn = document.getElementById('deleteNodeBtn');
+        const weightInput = document.getElementById('weightInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const runAlgorithmBtn = document.getElementById('runAlgorithmBtn');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const stopAlgorithmBtn = document.getElementById('stopAlgorithmBtn');
+        const captionDiv = document.getElementById('caption');
+        const statusMsg = document.getElementById('statusMsg');
+        const costDisplay = document.getElementById('costDisplay');
+        
+        // Application state
+        const state = {
+            nodes: [],
+            edges: [],
+            mode: 'add', // 'add', 'connect', 'delete'
+            selectedNodes: [],
+            mst: [], // Edges in the MST
+            algorithmRunning: false,
+            algorithmStep: 0,
+            minHeap: [], // For algorithm visualization
+            visitedNodes: new Set(),
+            nextNodeChar: 65, // ASCII for 'A'
+            totalCost: 0, // Total cost of the MST
+        };
+        
+        // Node class
+        class Node {
+            constructor(x, y, id) {
+                this.x = x;
+                this.y = y;
+                this.id = id;
+                this.radius = 25;
+                this.color = '#6495ED'; // Default color
+                this.isSelected = false;
+                this.isInMST = false;
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.isInMST ? '#4CAF50' : (this.isSelected ? '#FF7F50' : this.color);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#333';
+                ctx.stroke();
+                
+                // Draw node label
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.id, this.x, this.y);
+            }
+            
+            isPointInside(x, y) {
+                const distance = Math.sqrt((this.x - x) ** 2 + (this.y - y) ** 2);
+                return distance <= this.radius;
+            }
+        }
+        
+        // Edge class
+        class Edge {
+            constructor(node1, node2, weight) {
+                this.node1 = node1;
+                this.node2 = node2;
+                this.weight = weight;
+                this.isInMST = false;
+                this.isHighlighted = false;
+            }
+            
+            draw() {
+                // Calculate midpoint for weight text
+                const midX = (this.node1.x + this.node2.x) / 2;
+                const midY = (this.node1.y + this.node2.y) / 2;
+                
+                // Draw edge line
+                ctx.beginPath();
+                ctx.moveTo(this.node1.x, this.node1.y);
+                ctx.lineTo(this.node2.x, this.node2.y);
+                ctx.lineWidth = this.isInMST ? 4 : (this.isHighlighted ? 3 : 2);
+                ctx.strokeStyle = this.isInMST ? '#4CAF50' : (this.isHighlighted ? '#FF7F50' : '#999');
+                ctx.stroke();
+                
+                // Draw weight text with background
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(midX, midY, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#333';
+                ctx.stroke();
+                
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.weight, midX, midY);
+            }
+        }
+        
+        // Initialize the application
+        function init() {
+            // Set up event listeners
+            canvas.addEventListener('click', handleCanvasClick);
+            addNodeBtn.addEventListener('click', () => setMode('add'));
+            connectBtn.addEventListener('click', () => setMode('connect'));
+            deleteNodeBtn.addEventListener('click', () => setMode('delete'));
+            clearBtn.addEventListener('click', clearGraph);
+            runAlgorithmBtn.addEventListener('click', startAlgorithm);
+            nextStepBtn.addEventListener('click', executeNextStep);
+            stopAlgorithmBtn.addEventListener('click', stopAlgorithm);
+            
+            // Initial render
+            renderGraph();
+        }
+        
+        // Handle mode selection
+        function setMode(mode) {
+            state.mode = mode;
+            state.selectedNodes = [];
+            
+            // Update UI to reflect the mode
+            addNodeBtn.style.backgroundColor = mode === 'add' ? '#45a049' : '#4CAF50';
+            connectBtn.style.backgroundColor = mode === 'connect' ? '#45a049' : '#4CAF50';
+            deleteNodeBtn.style.backgroundColor = mode === 'delete' ? '#45a049' : '#4CAF50';
+            
+            // Update status message
+            switch (mode) {
+                case 'add':
+                    updateStatus('Click on the canvas to add a new node.');
+                    break;
+                case 'connect':
+                    updateStatus('Select two nodes to connect them with an edge.');
+                    break;
+                case 'delete':
+                    updateStatus('Click on a node to delete it.');
+                    break;
+            }
+            
+            renderGraph();
+        }
+        
+        // Handle canvas clicks
+        function handleCanvasClick(event) {
+            if (state.algorithmRunning) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            switch (state.mode) {
+                case 'add':
+                    addNode(x, y);
+                    break;
+                case 'connect':
+                    selectNodeForConnection(x, y);
+                    break;
+                case 'delete':
+                    deleteNode(x, y);
+                    break;
+            }
+        }
+        
+        // Add a new node
+        function addNode(x, y) {
+            // Check if we're clicking too close to another node
+            for (const node of state.nodes) {
+                if (node.isPointInside(x, y)) {
+                    updateStatus('Cannot place a node on top of another node.');
+                    return;
+                }
+            }
+            
+            // Create new node with letter ID (A, B, C, etc.)
+            const id = String.fromCharCode(state.nextNodeChar);
+            state.nextNodeChar++;
+            
+            const newNode = new Node(x, y, id);
+            state.nodes.push(newNode);
+            
+            updateStatus(`Added node ${id}.`);
+            renderGraph();
+        }
+        
+        // Select a node for creating an edge
+        function selectNodeForConnection(x, y) {
+            for (const node of state.nodes) {
+                if (node.isPointInside(x, y)) {
+                    handleNodeSelection(node);
+                    return;
+                }
+            }
+        }
+        
+        // Handle selecting nodes for connection
+        function handleNodeSelection(node) {
+            // If node is already selected, deselect it
+            const existingIndex = state.selectedNodes.findIndex(n => n.id === node.id);
+            if (existingIndex >= 0) {
+                state.selectedNodes.splice(existingIndex, 1);
+                node.isSelected = false;
+                updateStatus(`Deselected node ${node.id}.`);
+                renderGraph();
+                return;
+            }
+            
+            // Select this node
+            node.isSelected = true;
+            state.selectedNodes.push(node);
+            
+            if (state.selectedNodes.length === 1) {
+                updateStatus(`Selected node ${node.id}. Select another node to create an edge.`);
+            } else if (state.selectedNodes.length === 2) {
+                // Check if edge already exists
+                const [node1, node2] = state.selectedNodes;
+                const edgeExists = state.edges.some(e => 
+                    (e.node1.id === node1.id && e.node2.id === node2.id) || 
+                    (e.node1.id === node2.id && e.node2.id === node1.id)
+                );
+                
+                if (edgeExists) {
+                    updateStatus(`Edge between ${node1.id} and ${node2.id} already exists.`);
+                    node.isSelected = false;
+                    state.selectedNodes.pop();
+                } else {
+                    // Create the edge with the specified weight
+                    const weight = parseInt(weightInput.value) || 1;
+                    state.edges.push(new Edge(node1, node2, weight));
+                    
+                    updateStatus(`Created edge between ${node1.id} and ${node2.id} with weight ${weight}.`);
+                    
+                    // Reset selection
+                    node1.isSelected = false;
+                    node2.isSelected = false;
+                    state.selectedNodes = [];
+                }
+            }
+            
+            renderGraph();
+        }
+        
+        // Delete a node
+        function deleteNode(x, y) {
+            for (let i = 0; i < state.nodes.length; i++) {
+                const node = state.nodes[i];
+                if (node.isPointInside(x, y)) {
+                    // Remove all edges connected to this node
+                    state.edges = state.edges.filter(edge => 
+                        edge.node1.id !== node.id && edge.node2.id !== node.id
+                    );
+                    
+                    // Remove the node
+                    state.nodes.splice(i, 1);
+                    
+                    updateStatus(`Deleted node ${node.id} and all its connected edges.`);
+                    renderGraph();
+                    return;
+                }
+            }
+        }
+        
+        // Clear the graph
+        function clearGraph() {
+            if (state.algorithmRunning) {
+                stopAlgorithm();
+            }
+            
+            state.nodes = [];
+            state.edges = [];
+            state.mst = [];
+            state.nextNodeChar = 65; // Reset to 'A'
+            state.totalCost = 0;
+            costDisplay.textContent = '';
+            
+            updateStatus('Graph cleared.');
+            updateCaption('Welcome to Prim\'s Algorithm Visualization Lab. Start by adding nodes and connecting them with weighted edges.');
+            renderGraph();
+        }
+        
+        // Start running Prim's algorithm
+        function startAlgorithm() {
+            if (state.nodes.length < 2) {
+                updateStatus('Need at least 2 nodes to run Prim\'s algorithm.');
+                return;
+            }
+            
+            // Check if graph is connected
+            if (!isGraphConnected()) {
+                updateStatus('Graph must be connected to run Prim\'s algorithm.');
+                return;
+            }
+            
+            // Initialize algorithm state
+            state.algorithmRunning = true;
+            state.algorithmStep = 0;
+            state.mst = [];
+            state.visitedNodes = new Set();
+            state.minHeap = [];
+            state.totalCost = 0;
+            costDisplay.textContent = '';
+            
+            // Disable/enable appropriate buttons
+            runAlgorithmBtn.disabled = true;
+            nextStepBtn.disabled = false;
+            stopAlgorithmBtn.disabled = false;
+            addNodeBtn.disabled = true;
+            connectBtn.disabled = true;
+            deleteNodeBtn.disabled = true;
+            clearBtn.disabled = true;
+            
+            // Reset node and edge states
+            state.nodes.forEach(node => {
+                node.isInMST = false;
+                node.isSelected = false;
+            });
+            
+            state.edges.forEach(edge => {
+                edge.isInMST = false;
+                edge.isHighlighted = false;
+            });
+            
+            // Start with the first node
+            const startNode = state.nodes[0];
+            startNode.isInMST = true;
+            state.visitedNodes.add(startNode.id);
+            
+            // Add all edges from the start node to the min heap
+            findEdgesFromNode(startNode).forEach(edge => {
+                state.minHeap.push(edge);
+            });
+            
+            // Sort the min heap by edge weight
+            sortMinHeap();
+            
+            updateCaption(`Started Prim's Algorithm from node ${startNode.id}. Added all edges from ${startNode.id} to the min heap.`);
+            updateStatus(`Step 1: Started with node ${startNode.id} and added all its edges to the min heap.`);
+            
+            renderGraph();
+        }
+        
+        // Execute the next step of Prim's algorithm
+        function executeNextStep() {
+            if (!state.algorithmRunning) return;
+            
+            state.algorithmStep++;
+            
+            // If all nodes are visited, we're done
+            if (state.visitedNodes.size === state.nodes.length) {
+                // Calculate the total MST cost
+                state.totalCost = state.mst.reduce((sum, edge) => sum + edge.weight, 0);
+                costDisplay.textContent = `Minimum Spanning Tree Total Cost: ${state.totalCost}`;
+                
+                updateCaption(`Algorithm complete! Found the Minimum Spanning Tree with ${state.mst.length} edges. Totaled cost: ${state.totalCost}`);
+                updateStatus(`Prim's Algorithm completed successfully. The MST contains all ${state.nodes.length} nodes.`);
+                stopAlgorithm(false);
+                return;
+            }
+            
+            // If min heap is empty but not all nodes are visited, the graph is not connected
+            if (state.minHeap.length === 0) {
+                updateCaption('Algorithm stopped! The graph is not connected.');
+                updateStatus('Cannot complete MST: Graph is not connected.');
+                stopAlgorithm(false);
+                return;
+            }
+            
+            // Find the minimum weight edge from the min heap
+            let minEdge;
+            
+            // Keep finding edges until we find one that connects to an unvisited node
+            while (state.minHeap.length > 0) {
+                minEdge = state.minHeap[0];
+                state.minHeap.shift(); // Remove from heap
+                
+                // Determine the target node (the one not in MST)
+                const targetNode = !state.visitedNodes.has(minEdge.node1.id) 
+                    ? minEdge.node1 
+                    : !state.visitedNodes.has(minEdge.node2.id) 
+                        ? minEdge.node2 
+                        : null;
+                
+                if (targetNode) {
+                    // We found a valid edge
+                    targetNode.isInMST = true;
+                    minEdge.isInMST = true;
+                    state.visitedNodes.add(targetNode.id);
+                    state.mst.push(minEdge);
+                    
+                    // Update running total cost
+                    const currentCost = state.mst.reduce((sum, edge) => sum + edge.weight, 0);
+                    costDisplay.textContent = `Current MST Cost: ${currentCost}`;
+                    
+                    // Add all edges from the new node to the min heap
+                    const newEdges = findEdgesFromNode(targetNode).filter(edge => {
+                        // Only add edges to nodes not in MST
+                        const otherNode = edge.node1.id === targetNode.id ? edge.node2 : edge.node1;
+                        return !state.visitedNodes.has(otherNode.id);
+                    });
+                    
+                    state.minHeap.push(...newEdges);
+                    sortMinHeap();
+                    
+                    // Remove edges to nodes that are already in MST
+                    state.minHeap = state.minHeap.filter(edge => {
+                        const node1InMST = state.visitedNodes.has(edge.node1.id);
+                        const node2InMST = state.visitedNodes.has(edge.node2.id);
+                        return !(node1InMST && node2InMST);
+                    });
+                    
+                    // Highlight edges in the min heap
+                    state.edges.forEach(edge => {
+                        edge.isHighlighted = state.minHeap.some(e => e === edge);
+                    });
+                    
+                    updateCaption(`Added edge ${minEdge.node1.id}-${minEdge.node2.id} (weight: ${minEdge.weight}) to MST. Added new edges from node ${targetNode.id} to the min heap.`);
+                    updateStatus(`Step ${state.algorithmStep}: Added node ${targetNode.id} to MST via edge ${minEdge.node1.id}-${minEdge.node2.id}.`);
+                    break;
+                }
+            }
+            
+            renderGraph();
+        }
+        
+        // Stop the algorithm
+        function stopAlgorithm(reset = true) {
+            state.algorithmRunning = false;
+            
+            // Re-enable buttons
+            runAlgorithmBtn.disabled = false;
+            nextStepBtn.disabled = true;
+            stopAlgorithmBtn.disabled = true;
+            addNodeBtn.disabled = false;
+            connectBtn.disabled = false;
+            deleteNodeBtn.disabled = false;
+            clearBtn.disabled = false;
+            
+            if (reset) {
+                // Reset algorithm state but keep the MST visualization
+                updateStatus('Algorithm stopped.');
+            }
+        }
+        
+        // Find all edges connected to a node
+        function findEdgesFromNode(node) {
+            return state.edges.filter(edge => 
+                edge.node1.id === node.id || edge.node2.id === node.id
+            );
+        }
+        
+        // Sort the min heap by edge weight
+        function sortMinHeap() {
+            state.minHeap.sort((a, b) => a.weight - b.weight);
+        }
+        
+        // Check if the graph is connected
+        function isGraphConnected() {
+            if (state.nodes.length === 0) return true;
+            
+            const visited = new Set();
+            const queue = [state.nodes[0]];
+            visited.add(state.nodes[0].id);
+            
+            while (queue.length > 0) {
+                const current = queue.shift();
+                
+                // Find all adjacent nodes
+                const edges = findEdgesFromNode(current);
+                for (const edge of edges) {
+                    const neighbor = edge.node1.id === current.id ? edge.node2 : edge.node1;
+                    if (!visited.has(neighbor.id)) {
+                        visited.add(neighbor.id);
+                        queue.push(neighbor);
+                    }
+                }
+            }
+            
+            return visited.size === state.nodes.length;
+        }
+        
+        // Update the caption
+        function updateCaption(text) {
+            captionDiv.textContent = text;
+        }
+        
+        // Update the status message
+        function updateStatus(text) {
+            statusMsg.textContent = text;
+        }
+        
+        // Render the graph
+        function renderGraph() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw edges first (so they appear under nodes)
+            state.edges.forEach(edge => edge.draw());
+            
+            // Draw nodes
+            state.nodes.forEach(node => node.draw());
+        }
+        
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
